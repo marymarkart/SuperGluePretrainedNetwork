@@ -103,7 +103,7 @@ class VideoStreamer:
         3.) A directory of images (files in directory matching 'image_glob').
         4.) A video file, such as an .mp4 or .avi file.
     """
-    def __init__(self, basedir, resize, skip, image_glob, max_length=1000000):
+    def __init__(self, camera_1, camera_2, basedir, resize, skip, image_glob, max_length=1000000):
         self._ip_grabbed = False
         self._ip_running = False
         self._ip_camera = False
@@ -113,11 +113,39 @@ class VideoStreamer:
         self.camera = True
         self.video_file = False
         self.listing = []
+        self.camera_1 = []
+        self.camera_2 = []
         self.resize = resize
         self.interp = cv2.INTER_AREA
         self.i = 0
         self.skip = skip
         self.max_length = max_length
+        if Path(camera_1).is_dir():
+            print('==> Processing image directory input for camera_1 image: {}'.format(camera_1))
+            self.camera_1 = list(Path(camera_1).glob(image_glob[0]))
+            for j in range(1, len(image_glob)):
+                image_path = list(Path(camera_1).glob(image_glob[j]))
+                self.camera_1 = self.camera_1 + image_path
+            self.camera_1.sort()
+            self.camera_1 = self.camera_1[::self.skip]
+            self.max_length = np.min([self.max_length, len(self.camera_1)])
+            if self.max_length == 0:
+                raise IOError('No images found (maybe bad \'image_glob\' ?)')
+            self.camera_1 = self.camera_1[:self.max_length]
+
+        if Path(camera_2).is_dir():
+            print('==> Processing image directory input for camera_2 image: {}'.format(camera_2))
+            self.camera_2 = list(Path(camera_2).glob(image_glob[0]))
+            for j in range(1, len(image_glob)):
+                image_path = list(Path(camera_2).glob(image_glob[j]))
+                self.camera_2 = self.camera_2 + image_path
+            self.camera_2.sort()
+            self.camera_2 = self.camera_2[::self.skip]
+            self.max_length = np.min([self.max_length, len(self.camera_2)])
+            if self.max_length == 0:
+                raise IOError('No images found (maybe bad \'image_glob\' ?)')
+            self.camera_2 = self.camera_2[:self.max_length]
+
         if isinstance(basedir, int) or basedir.isdigit():
             print('==> Processing USB webcam input: {}'.format(basedir))
             self.cap = cv2.VideoCapture(int(basedir))
@@ -207,8 +235,12 @@ class VideoStreamer:
         else:
             image_file = str(self.listing[self.i])
             image = self.load_image(image_file)
+            camera_1_file = str(self.camera_1[self.i])
+            camera_1_image = self.load_image(camera_1_file)
+            camera_2_file = str(self.camera_2[self.i])
+            camera_2_image = self.load_image(camera_1_file)
         self.i = self.i + 1
-        return (image, True)
+        return (camera_1_image, camera_2_image, image, camera_1_file, camera_2_file, image_file, True)
 
     def start_ip_camera_thread(self):
         self._ip_thread = Thread(target=self.update_ip_camera, args=())

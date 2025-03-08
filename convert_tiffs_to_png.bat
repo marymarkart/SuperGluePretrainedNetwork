@@ -1,0 +1,1 @@
+python scripts\convert_tiff_to_png.py --tiff_dir_1 "camera_1\image_glob" --tiff_dir_2 "camera_2\image_glob" --tiff_dir_3 "camera_3\image_glob" --png_dir_1 "images\camera_1\image_glob" --png_dir_2 "images\camera_2\image_glob" --png_dir_3 "images\camera_3\image_glob" --demosaic_method VNG
